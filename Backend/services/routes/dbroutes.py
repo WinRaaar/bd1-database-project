@@ -271,38 +271,25 @@ def get_pedidos_restaurante():
     return jsonify(pedidos)
 
 
-@app.route('/pedido/status/mesa', methods=['GET'])
-def status_pedido_mesa():
-    n_mesa = request.args.get("n_mesa", type=int)
-    if n_mesa is None:
-        return jsonify({"error": "Número da mesa é obrigatório"}), 400
-
-    query = f"""
-        SELECT p.id_pedido, p.data_hora, p.status, p.valor_total
-        FROM pedido p
-        WHERE p.num_mesa = {n_mesa}
-        ORDER BY p.data_hora DESC
-        LIMIT 3;
+@app.route('/pedido/status/<int:id_pedido>', methods=['GET'])
+def status_pedido(id_pedido):
     """
-    pedidos = db_manager.execute_select_all(query)
-    return jsonify(pedidos)
-
-
-@app.route('/pedido/status/delivery', methods=['GET'])
-def status_pedido_delivery():
-    id_entrega = request.args.get("id_entrega")
-    if not id_entrega:
-        return jsonify({"error": "ID da entrega (endereço) é obrigatório"}), 400
-
-    query = f"""
-        SELECT p.id_pedido, p.data_hora, p.status, p.valor_total
-        FROM pedido p
-        WHERE p.endereco_entrega = '{id_entrega}'
-        ORDER BY p.data_hora DESC
-        LIMIT 3;
+    Retorna o status de um pedido específico pelo ID
     """
-    pedidos = db_manager.execute_select_all(query)
-    return jsonify(pedidos)
+    try:
+        pedido = db_manager.execute_select_one(f"""
+            SELECT id_pedido, tipo, status, valor_total, data_hora
+            FROM pedido
+            WHERE id_pedido = {id_pedido};
+        """)
+        if not pedido:
+            return jsonify({"error": "Pedido não encontrado"}), 404
+
+        return jsonify(pedido)
+
+    except Exception as e:
+        print(f"Erro ao consultar status do pedido: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/pedido/emitir/<int:id_pedido>', methods=['GET'])
@@ -424,6 +411,13 @@ def get_cardapio():
             print(f"Erro ao fazer ROLLBACK: {e2}")
             
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/ingredientes', methods=['GET'])
+def get_ingredientes():
+    query = "SELECT id_ingrediente, nome, quantidade_estoque, unidade_medida FROM ingrediente;"
+    ingredientes = db_manager.execute_select_all(query)
+    return jsonify(ingredientes)
+
 
 @app.route('/gerar-nota/<int:id_pedido>', methods=['GET'])
 def gerar_nota_pdf(id_pedido):

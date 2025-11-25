@@ -44,6 +44,9 @@ export default function EmitirPedido() {
     }
   };
 
+  // Se não estiver ativa, não renderiza (mas mantém o estado do hook!)
+  if (!active) return null;
+
   return (
     <section className="text-block">
       <h2 className="section-title">Emitir Comanda e Nota Fiscal</h2>

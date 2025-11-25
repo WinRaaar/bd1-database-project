@@ -1,0 +1,50 @@
+.text-block {
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #f8f8f8;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.submit-button {
+  padding: 8px 15px;
+  background-color: #1E90FF;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.submit-button:hover {
+  background-color: #1C86EE;
+}
+
+.ingredientes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.ingredientes-table th,
+.ingredientes-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.ingredientes-table th {
+  background-color: #1E90FF;
+  color: white;
+}
+
+.ingredientes-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}

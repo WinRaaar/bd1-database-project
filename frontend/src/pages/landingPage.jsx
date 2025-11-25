@@ -4,11 +4,11 @@ import RegistrarPedido from './tabs/registrarPedido';
 import ConsultarStatus from './tabs/status';
 import EmitirPedido from './tabs/emitir';
 import Relatorios from './tabs/relatorios';
+import ConsultarIngredientes from './tabs/ConsultarIngredientes';
 
 import '../styles/landingPage.css';
 
 export default function LandingPage() {
-  
   const [selectedTab, setSelectedTab] = useState("registrar");
 
   const tabs = [
@@ -16,51 +16,24 @@ export default function LandingPage() {
     { id: "status", label: "Consultar Status" },
     { id: "emitir", label: "Emitir Comanda / NF" },
     { id: "relatorios", label: "Relatórios e Gráficos" },
-    { id: "entrega", label: "Consultar Entregas" },
+    { id: "estoque", label: "Consultar Estoque" },
   ];
 
-  
-
- 
-
-  const renderContent = () => {
-  switch (selectedTab) {
-
-    case "registrar":
-      return <RegistrarPedido />;
-
-
-    case "status":
-      return <ConsultarStatus />;
-
-    case "emitir":
-      return <EmitirPedido />;
-
-    case "relatorios":
-      return <Relatorios />;
-
-    case "entrega":
-      return (
-        <section className="text-block">
-          <h2 className="section-title">Consultar Entregas</h2>
-          <p className="section-text">
-            Consulte o status de pedidos realizados via delivery, atualizado em tempo real.
-          </p>
-        </section>
-      );
-
-    default:
-      return null;
-  }
-};
-
+  const renderContent = () => (
+    <>
+      <RegistrarPedido active={selectedTab === "registrar"} />
+      <ConsultarStatus active={selectedTab === "status"} />
+      <EmitirPedido active={selectedTab === "emitir"} />
+      <Relatorios active={selectedTab === "relatorios"} />
+      <ConsultarIngredientes active={selectedTab === "estoque"} />
+    </>
+  );
 
   return (
     <div className="layout">
-
       {/* MENU LATERAL */}
       <aside className="sidebar">
-        <h2 className="sidebar-title">Nome Franquia</h2>
+        <h2 className="sidebar-title">rEstAuranteCH</h2>
 
         {tabs.map((tab) => (
           <button
@@ -75,7 +48,6 @@ export default function LandingPage() {
 
       {/* CONTEÚDO CENTRAL */}
       <main className="content-area">{renderContent()}</main>
-
     </div>
   );
 }
