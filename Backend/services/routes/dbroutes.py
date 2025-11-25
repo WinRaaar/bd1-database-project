@@ -5,15 +5,15 @@ from datetime import datetime
 
 app = Flask(__name__)
 db_manager = DatabaseManager()
-CORS(app, origins = "*")
+CORS(app, origins="*")
 
 @app.route('/', methods=['GET'])
 def home():
     return {"message": "API de Gerenciamento da Pizzaria"}
 
-@app.route('/restaurante', methods=['get'])
+@app.route('/restaurante', methods=['GET'])
 def get_restaurante():
-    id_restaurante = request.args.get('id_restaurante', type =int)
+    id_restaurante = request.args.get('id_restaurante', type=int)
     if id_restaurante is None:
         result = db_manager.execute_select_all("SELECT * FROM restaurante;")
         return jsonify(result)
@@ -21,7 +21,6 @@ def get_restaurante():
     if result is None:
         return jsonify({"error": "Restaurante não encontrado"}), 404
     return jsonify(result)
-
 
 # Inserir novo pedido
 @app.route('/pedido', methods=['POST'])
@@ -37,46 +36,75 @@ def create_pedido():
     taxa_entrega = data.get("taxa_entrega", 0)
     tipo = data.get("tipo")
     status = data.get("status", "pendente")
+
+    # Captura campos extras enviados pelo frontend
+    n_mesa = data.get("n_mesa")
+    cupom = data.get("cupom")
+
+    # Nota: O frontend envia o ID da entrega no campo 'endereco_entrega' ou 'deliveryId'
     endereco_entrega = data.get("endereco_entrega")
     itens = data.get("itens", [])
 
-    if not id_cliente or not id_restaurante or not tipo or not endereco_entrega:
-        return jsonify({"error": "Campos obrigatórios ausentes"}), 400
+    if not id_cliente or not id_restaurante or not tipo:
+        return jsonify({"error": "Campos obrigatórios ausentes (cliente, restaurante, tipo)"}), 400
+
+    # Validação simples para Delivery: precisa de endereço
+    if tipo == 'delivery' and not endereco_entrega:
+        return jsonify({"error": "Endereço de entrega é obrigatório para delivery"}), 400
+
+    # Validação simples para Mesa: precisa do número da mesa
+    if tipo == 'mesa' and not n_mesa:
+        return jsonify({"error": "Número da mesa é obrigatório para pedidos na mesa"}), 400
 
     data_hora = datetime.now()
     valor_total = 0
 
+    # Calcular valor total
     for item in itens:
         item_id = item.get("id_item")
         quantidade = item.get("quantidade", 1)
-        preco = db_manager.execute_select_one(
+        # Busca o preço no banco (assume que id_item é valido)
+        preco_data = db_manager.execute_select_one(
             f"SELECT preco FROM item_cardapio WHERE id_item = {item_id}"
         )
-        if preco:
-            valor_total += preco["preco"] * quantidade
+        if preco_data:
+            valor_total += preco_data["preco"] * quantidade
 
+    # Tratar valores nulos para SQL (n_mesa e funcionario podem ser vazios)
+    sql_n_mesa = f"{n_mesa}" if n_mesa else "NULL"
+    sql_id_funcionario = f"{id_funcionario}" if id_funcionario else "NULL"
+    sql_endereco = f"'{endereco_entrega}'" if endereco_entrega else "NULL"
+
+    # INSERÇÃO CORRIGIDA: Adicionado campo n_mesa
     insert_pedido = f"""
         INSERT INTO pedido (taxa_entrega, data_hora, tipo, valor_total, status,
-                            endereco_entrega, id_funcionario, id_cliente, id_restaurante)
+                            endereco_entrega, n_mesa, id_funcionario, id_cliente, id_restaurante)
         VALUES ({taxa_entrega}, '{data_hora}', '{tipo}', {valor_total}, '{status}',
-                '{endereco_entrega}', {id_funcionario or 'NULL'}, {id_cliente}, {id_restaurante})
+                {sql_endereco}, {sql_n_mesa}, {sql_id_funcionario}, {id_cliente}, {id_restaurante})
         RETURNING id_pedido;
     """
-    pedido = db_manager.execute_select_one(insert_pedido)
-    id_pedido = pedido["id_pedido"]
 
-    for item in itens:
-        db_manager.execute_query(f"""
-            INSERT INTO pedido_item (id_pedido, id_item, quantidade)
-            VALUES ({id_pedido}, {item['id_item']}, {item.get('quantidade', 1)});
-        """)
+    try:
+        pedido = db_manager.execute_select_one(insert_pedido)
+        if not pedido:
+             return jsonify({"error": "Erro ao inserir pedido no banco"}), 500
+        id_pedido = pedido["id_pedido"]
 
-    return jsonify({
-        "message": "Pedido criado com sucesso!",
-        "pedido_id": id_pedido,
-        "valor_total": valor_total
-    }), 201
-    
+        for item in itens:
+            db_manager.execute_query(f"""
+                INSERT INTO pedido_item (id_pedido, id_item, quantidade)
+                VALUES ({id_pedido}, {item['id_item']}, {item.get('quantidade', 1)});
+            """)
+
+        return jsonify({
+            "message": "Pedido criado com sucesso!",
+            "pedido_id": id_pedido,
+            "valor_total": valor_total
+        }), 201
+    except Exception as e:
+        print(f"Erro no insert: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/pedidos', methods=['GET'])
 def get_pedidos_restaurante():
     id_restaurante = request.args.get('id_restaurante', type=int)
@@ -94,7 +122,7 @@ def get_pedidos_restaurante():
         return jsonify({"error": "Nenhum pedido encontrado para este restaurante"}), 404
     return jsonify(pedidos)
 
-# Rota para mudar o status de um pedido 
+# Rota para consultar status por MESA
 @app.route('/pedido/status/mesa', methods=['GET'])
 def status_pedido_mesa():
     n_mesa = request.args.get("n_mesa", type=int)
@@ -102,7 +130,7 @@ def status_pedido_mesa():
         return jsonify({"error": "Número da mesa é obrigatório"}), 400
 
     query = f"""
-        SELECT p.id_pedido, p.data_hora, p.status
+        SELECT p.id_pedido, p.data_hora, p.status, p.valor_total
         FROM pedido p
         WHERE p.n_mesa = {n_mesa}
         ORDER BY p.data_hora DESC
@@ -111,8 +139,25 @@ def status_pedido_mesa():
     pedidos = db_manager.execute_select_all(query)
     return jsonify(pedidos)
 
-# nota fiscal
+# NOVA ROTA: Consultar status por DELIVERY (ID da entrega/endereço)
+@app.route('/pedido/status/delivery', methods=['GET'])
+def status_pedido_delivery():
+    id_entrega = request.args.get("id_entrega") # Frontend envia string
+    if not id_entrega:
+        return jsonify({"error": "ID da entrega (endereço) é obrigatório"}), 400
 
+    # Assume-se que o frontend usa o 'deliveryId' como o endereço ou identificador gravado em 'endereco_entrega'
+    query = f"""
+        SELECT p.id_pedido, p.data_hora, p.status, p.valor_total
+        FROM pedido p
+        WHERE p.endereco_entrega = '{id_entrega}'
+        ORDER BY p.data_hora DESC
+        LIMIT 3;
+    """
+    pedidos = db_manager.execute_select_all(query)
+    return jsonify(pedidos)
+
+# Nota fiscal e comanda
 @app.route('/pedido/emitir/<int:id_pedido>', methods=['GET'])
 def emitir_pedido(id_pedido):
     # Buscar pedido
@@ -134,7 +179,7 @@ def emitir_pedido(id_pedido):
         WHERE pi.id_pedido = {id_pedido};
     """)
 
-    # Gerar comanda (simples JSON)
+    # Gerar comanda
     comanda = {
         "id_pedido": pedido["id_pedido"],
         "cliente": pedido["cliente"],
@@ -142,7 +187,7 @@ def emitir_pedido(id_pedido):
         "tipo": pedido["tipo"]
     }
 
-    # Gerar nota fiscal (simples JSON, futuramente PDF)
+    # Gerar nota fiscal
     nota_fiscal = {
         "id_pedido": pedido["id_pedido"],
         "cliente": pedido["cliente"],
