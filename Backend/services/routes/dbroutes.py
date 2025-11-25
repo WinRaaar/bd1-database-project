@@ -3,6 +3,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
 from dotenv import load_dotenv
+import io
+from flask import send_file
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -421,6 +425,107 @@ def get_cardapio():
             
         return jsonify({"error": str(e)}), 500
 
+@app.route('/gerar-nota/<int:id_pedido>', methods=['GET'])
+def gerar_nota_pdf(id_pedido):
+    print(f"=== Iniciando PDF para Pedido: {id_pedido} ===") 
+    
+    try:
+        try:
+            db_manager.execute_query("ROLLBACK;")
+        except Exception as e:
+            print(f"Aviso de rollback: {e}")
+
+        query_pedido = f"""
+            SELECT p.id_pedido, p.data_hora, p.valor_total, c.nome AS cliente, 
+                   p.taxa_entrega
+            FROM pedido p
+            JOIN cliente c ON p.id_cliente = c.id_cliente
+            WHERE p.id_pedido = {id_pedido};
+        """
+        print(f"Executando query: {query_pedido}")
+        
+        pedido = db_manager.execute_select_one(query_pedido)
+
+        if not pedido:
+            print("ERRO: Query retornou vazio (None).")
+            return jsonify({"error": "Pedido não encontrado"}), 404
+
+        print(f"Pedido encontrado: {pedido['cliente']}")
+
+        query_itens = f"""
+            SELECT ic.nome, pi.quantidade, ic.preco
+            FROM pedido_item pi
+            JOIN item_cardapio ic ON pi.id_item = ic.id_item
+            WHERE pi.id_pedido = {id_pedido};
+        """
+        itens = db_manager.execute_select_all(query_itens)
+
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A4)
+        
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, 800, "PIZZARIA DO SISTEMA")
+        p.setFont("Helvetica", 10)
+        p.drawString(50, 785, "CNPJ: 00.000.000/0001-00")
+        
+        p.line(50, 760, 550, 760)
+
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, 740, f"NOTA FISCAL - PEDIDO #{pedido['id_pedido']}")
+        p.setFont("Helvetica", 11)
+        p.drawString(50, 720, f"Cliente: {pedido['cliente']}")
+        p.drawString(350, 720, f"Data: {pedido['data_hora']}")
+
+        p.line(50, 690, 550, 690)
+
+        y = 670
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(50, y, "ITEM")
+        p.drawString(350, y, "QTD")
+        p.drawString(480, y, "TOTAL")
+        y -= 20
+
+        p.setFont("Helvetica", 10)
+        if itens: 
+            for item in itens:
+                nome = item['nome']
+                qtd = item['quantidade'] if item['quantidade'] else 0
+                preco = float(item['preco']) if item['preco'] else 0.0
+                total_item = qtd * preco
+                
+                p.drawString(50, y, f"{nome}")
+                p.drawString(350, y, f"{qtd}")
+                p.drawString(480, y, f"R$ {total_item:.2f}")
+                y -= 15
+        
+        y -= 20
+        p.line(50, y, 550, y)
+        y -= 20
+
+        val_total = float(pedido['valor_total']) if pedido['valor_total'] else 0.0
+        val_taxa = float(pedido['taxa_entrega']) if pedido['taxa_entrega'] else 0.0
+
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(350, y, f"Taxa Entrega: R$ {val_taxa:.2f}")
+        y -= 20
+        p.drawString(350, y, f"TOTAL: R$ {val_total:.2f}")
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"nota_fiscal_{id_pedido}.pdf",
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"ERRO CRÍTICO ao gerar PDF: {e}")
+        import traceback
+        traceback.print_exc() 
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
