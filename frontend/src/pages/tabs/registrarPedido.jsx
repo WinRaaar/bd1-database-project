@@ -20,10 +20,19 @@ export default function RegistrarPedido() {
     if (!selectedItem) return alert("Selecione um item!");
     if (quantity < 1) return alert("Quantidade inválida!");
 
-    const itemSelecionado = cardapio.find(i => i.id_item === selectedItem);
+    const itemSelecionado = cardapio.find(i => i.id_item === Number(selectedItem));
     if (!itemSelecionado) return alert("Item inválido!");
 
-    setOrderItems([...orderItems, { ...itemSelecionado, quantity }]);
+    setOrderItems([
+        ...orderItems,
+        {
+          id_item: itemSelecionado.id_item,
+          nome: itemSelecionado.nome,
+          quantity,
+          preco: itemSelecionado.preco
+        }
+    ]);
+
     setSelectedItem("");
     setQuantity(1);
   };
