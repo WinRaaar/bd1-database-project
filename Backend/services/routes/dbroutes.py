@@ -200,3 +200,43 @@ def emitir_pedido(id_pedido):
         "comanda": comanda,
         "nota_fiscal": nota_fiscal
     })
+
+@app.route('/relatorio/vendas', methods=['GET'])
+def relatorio_vendas():
+    id_restaurante = request.args.get('id_restaurante', type=int)
+    if id_restaurante is None:
+        return jsonify({"error": "id_restaurante é obrigatório"}), 400
+
+    # Agrupa vendas por data (ignorando hora)
+    query = f"""
+        SELECT TO_CHAR(data_hora, 'DD/MM') as data,
+               SUM(valor_total) as total_vendas,
+               COUNT(id_pedido) as qtd_pedidos
+        FROM pedido
+        WHERE id_restaurante = {id_restaurante}
+        GROUP BY TO_CHAR(data_hora, 'DD/MM'), DATE(data_hora)
+        ORDER BY DATE(data_hora) ASC
+        LIMIT 7; -- Últimos 7 dias com vendas
+    """
+    resultado = db_manager.execute_select_all(query)
+    return jsonify(resultado)
+
+# ROTA DE RELATÓRIOS: Itens mais populares (Gráfico de Pizza)
+@app.route('/relatorio/itens-populares', methods=['GET'])
+def relatorio_itens():
+    id_restaurante = request.args.get('id_restaurante', type=int)
+    if id_restaurante is None:
+        return jsonify({"error": "id_restaurante é obrigatório"}), 400
+
+    query = f"""
+        SELECT ic.nome, SUM(pi.quantidade) as total_vendido
+        FROM pedido_item pi
+        JOIN item_cardapio ic ON pi.id_item = ic.id_item
+        JOIN pedido p ON pi.id_pedido = p.id_pedido
+        WHERE p.id_restaurante = {id_restaurante}
+        GROUP BY ic.nome
+        ORDER BY total_vendido DESC
+        LIMIT 5;
+    """
+    resultado = db_manager.execute_select_all(query)
+    return jsonify(resultado)
