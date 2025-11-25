@@ -247,7 +247,7 @@ def relatorio_itens():
 def get_cardapio():
     try:
         # Puxa todos os itens do cardápio
-        query = "SELECT id_item, nome FROM item_cardapio;"
+        query = "SELECT id_item, nome,preco FROM item_cardapio;"
         cardapio = db_manager.execute_select_all(query)
         return jsonify(cardapio)
     except Exception as e:
