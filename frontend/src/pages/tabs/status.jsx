@@ -1,85 +1,58 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import useConsultarStatus from '../hooks/useStatus';
-import '../../styles/Status.css';
+//import '../styles/landingPage.css';
 
-export default function ConsultarStatus({ active }) {
-  const { pedidoId, setPedidoId, pedidoStatus, fetchPedidoStatus } = useConsultarStatus();
-
-  // 🔥 Caso queira carregar automaticamente usando pedidoId preenchido, pode colocar aqui.
-  useEffect(() => {
-    if (active && pedidoId) {
-      fetchPedidoStatus();
-    }
-  }, [active]);
-
-  // 🚫 Se não estiver ativa, não renderiza (mas estado do hook permanece!)
-  if (!active) return null;
-
-  // Cores e labels para o status
-  const getStatusStyle = (status) => {
-    if (!status) return { color: '#000', label: '' };
-
-    switch (status.toLowerCase()) {
-      case 'pendente':
-        return { color: '#FFA500', label: 'Pendente ⏳' };
-      case 'em preparo':
-      case 'em preparação':
-        return { color: '#1E90FF', label: 'Em Preparação 🔧' };
-      case 'pronto':
-        return { color: '#32CD32', label: 'Pronto ✅' };
-      case 'entregue':
-        return { color: '#008000', label: 'Entregue 🚚' };
-      case 'cancelado':
-        return { color: '#FF0000', label: 'Cancelado ❌' };
-      default:
-        return { color: '#000000', label: status };
-    }
-  };
+export default function ConsultarStatus() {
+  const {
+    statusType, setStatusType,
+    mesaNumber, setMesaNumber,
+    deliveryId, setDeliveryId,
+    recentOrders, fetchRecentPedidos
+  } = useConsultarStatus();
 
   return (
     <section className="text-block">
       <h2 className="section-title">Consultar Status do Pedido</h2>
 
-      <div className="form-group">
-        <label className="form-label">ID do Pedido</label>
-        <input
-          type="number"
-          className="form-input"
-          value={pedidoId}
-          onChange={(e) => setPedidoId(e.target.value)}
-          placeholder="Digite o ID do pedido"
-        />
-      </div>
+      <form className="pedido-form" onSubmit={(e) => e.preventDefault()}>
+        <label className="form-label">Tipo do Pedido</label>
+        <select className="form-input" value={statusType} onChange={e => setStatusType(e.target.value)}>
+          <option value="">Selecione...</option>
+          <option value="mesa">Mesa</option>
+          <option value="delivery">Delivery</option>
+        </select>
 
-      <button
-        type="button"
-        className="submit-button"
-        onClick={fetchPedidoStatus}
-      >
-        Consultar Status
-      </button>
+        {statusType === "mesa" && (
+          <>
+            <label className="form-label">Número da Mesa</label>
+            <input type="number" className="form-input" placeholder="Digite o número da mesa"
+              value={mesaNumber} onChange={e => setMesaNumber(e.target.value)} />
+          </>
+        )}
 
-      {pedidoStatus && (
-        <div className="pedido-status-card">
-          <h3>Status do Pedido</h3>
+        {statusType === "delivery" && (
+          <>
+            <label className="form-label">ID da Entrega</label>
+            <input type="text" className="form-input" placeholder="Digite o ID da entrega"
+              value={deliveryId} onChange={e => setDeliveryId(e.target.value)} />
+          </>
+        )}
 
-          <p><strong>ID do Pedido:</strong> {pedidoStatus.id_pedido}</p>
-          <p><strong>Tipo:</strong> {pedidoStatus.tipo}</p>
+        <button type="button" className="submit-button" onClick={fetchRecentPedidos}>
+          Consultar Últimos Pedidos
+        </button>
+      </form>
 
-          <p>
-            <strong>Status:</strong>{' '}
-            <span
-              style={{
-                color: getStatusStyle(pedidoStatus.status).color,
-                fontWeight: 'bold'
-              }}
-            >
-              {getStatusStyle(pedidoStatus.status).label}
-            </span>
-          </p>
-
-          <p><strong>Valor Total:</strong> R$ {pedidoStatus.valor_total}</p>
-          <p><strong>Data/Hora:</strong> {new Date(pedidoStatus.data_hora).toLocaleString()}</p>
+      {recentOrders.length > 0 && (
+        <div className="items-list">
+          <h3>Últimos pedidos {statusType === "mesa" ? `da mesa ${mesaNumber}` : ""}:</h3>
+          {recentOrders.map(pedido => (
+            <div key={pedido.id_pedido} className="item-line">
+              <span>ID Pedido: {pedido.id_pedido}</span>
+              <span>Status: {pedido.status}</span>
+              <span>Data/Hora: {new Date(pedido.data_hora).toLocaleString()}</span>
+            </div>
+          ))}
         </div>
       )}
     </section>
