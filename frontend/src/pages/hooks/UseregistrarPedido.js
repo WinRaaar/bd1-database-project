@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 
 export default function useRegistrarPedido() {
   const [orderType, setOrderType] = useState("");
@@ -9,9 +9,28 @@ export default function useRegistrarPedido() {
   const [employeeId, setEmployeeId] = useState("");
   const [mesaNumber, setMesaNumber] = useState("");
   const [deliveryId, setDeliveryId] = useState("");
+  const [cardapio, setCardapio] = useState([]); // <-- lista de itens do cardápio
+
+  // Puxar cardápio do backend
+  useEffect(() => {
+    const fetchCardapio = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:5000/cardapio"); // endpoint do backend
+        const data = await response.json();
+        setCardapio(data); // assume que data é array de { id_item, nome }
+      } catch (error) {
+        console.error("Erro ao buscar cardápio:", error);
+      }
+    };
+
+    fetchCardapio();
+  }, []);
 
   const handleRegisterPedido = async () => {
-    if (orderItems.length === 0) return alert("Adicione pelo menos um item!");
+    if (orderItems.length === 0) {
+      alert("Adicione pelo menos um item!");
+      return;
+    }
 
     const data = {
       id_cliente: 1,
@@ -21,8 +40,8 @@ export default function useRegistrarPedido() {
       tipo: orderType,
       n_mesa: orderType === "mesa" ? mesaNumber : null,
       endereco_entrega: orderType === "delivery" ? deliveryId : "",
-      itens: orderItems.map((item, index) => ({
-        id_item: index + 1, // Substituir pelo id real do banco
+      itens: orderItems.map((item) => ({
+        id_item: item.id_item,
         quantidade: item.quantity,
       })),
       cupom: couponCode
@@ -58,6 +77,7 @@ export default function useRegistrarPedido() {
     employeeId, setEmployeeId,
     mesaNumber, setMesaNumber,
     deliveryId, setDeliveryId,
-    handleRegisterPedido
+    handleRegisterPedido,
+    cardapio, // exportando cardápio
   };
 }
