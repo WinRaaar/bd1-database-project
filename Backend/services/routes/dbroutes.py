@@ -240,3 +240,15 @@ def relatorio_itens():
     """
     resultado = db_manager.execute_select_all(query)
     return jsonify(resultado)
+
+#rota cardapio
+
+@app.route('/cardapio', methods=['GET'])
+def get_cardapio():
+    try:
+        # Puxa todos os itens do cardápio
+        query = "SELECT id_item, nome FROM item_cardapio;"
+        cardapio = db_manager.execute_select_all(query)
+        return jsonify(cardapio)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
