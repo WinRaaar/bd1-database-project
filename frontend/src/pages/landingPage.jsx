@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import RegistrarPedido from './tabs/registrarPedido';
 import ConsultarStatus from './tabs/status';
 import EmitirPedido from './tabs/emitir';
-
+import Relatorios from './tabs/relatorios';
 import '../styles/landingPage.css';
 
 export default function LandingPage() {
@@ -40,7 +40,7 @@ export default function LandingPage() {
         <section className="text-block">
           <h2 className="section-title">Relatórios e Gráficos</h2>
           <p className="section-text">
-            Crie relatórios detalhados de vendas, consumo de ingredientes e gráficos comparativos entre períodos.
+          <Relatorios> />;
           </p>
         </section>
       );
