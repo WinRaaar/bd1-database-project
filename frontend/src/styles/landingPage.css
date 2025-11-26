@@ -204,3 +204,28 @@
 .item-line:last-child {
   border-bottom: none;
 }
+
+/* Adicione este bloco CSS ao seu projeto */
+
+.charts-wrapper {
+    display: grid;
+    /* Adapte o layout para 1 ou 2 colunas dependendo do seu design */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; /* Espaço entre os gráficos */
+    margin-top: 20px;
+}
+
+.chart-container {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.chart-box {
+    /* GARANTE que este container tenha uma altura EXPLÍCITA para o ResponsiveContainer funcionar */
+    width: 100%;
+    height: 300px; /* Altura mínima para o gráfico */
+    margin-top: 10px;
+}

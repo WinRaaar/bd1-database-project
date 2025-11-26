@@ -1,14 +1,12 @@
+// useRelatorios.js - Versão CORRIGIDA
 import { useState } from 'react';
 
 export default function useRelatorios() {
-  // Estados para Relatório Específico
+  // ... (estados inalterados)
   const [dadosVendas, setDadosVendas] = useState([]);
   const [itensPopulares, setItensPopulares] = useState([]);
-
-  // Estados para Relatório Geral (Admin)
   const [vendasPorUnidade, setVendasPorUnidade] = useState([]);
   const [itensGerais, setItensGerais] = useState([]);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -16,18 +14,36 @@ export default function useRelatorios() {
   const carregarRelatoriosEspecificos = async (idRestaurante) => {
     setLoading(true);
     setError(null);
+    let hasError = false;
+
     try {
-      const [resVendas, resItens] = await Promise.all([
-        fetch(`http://127.0.0.1:8000/relatorio/vendas?id_restaurante=${idRestaurante}`),
-        fetch(`http://127.0.0.1:8000/relatorio/itens-populares?id_restaurante=${idRestaurante}`)
-      ]);
+      // 1. Requisição de Vendas
+      const resVendas = await fetch(`http://127.0.0.1:8000/relatorio/vendas?id_restaurante=${idRestaurante}`);
+      if (!resVendas.ok) {
+        hasError = true;
+        setDadosVendas([]); // Garante array vazio em caso de falha
+        console.error('Falha ao buscar dados de vendas.');
+      } else {
+        setDadosVendas(await resVendas.json());
+      }
 
-      if (!resVendas.ok || !resItens.ok) throw new Error('Erro ao buscar dados específicos');
+      // 2. Requisição de Itens Populares
+      const resItens = await fetch(`http://127.0.0.1:8000/relatorio/itens-populares?id_restaurante=${idRestaurante}`);
+      if (!resItens.ok) {
+        hasError = true;
+        setItensPopulares([]); // Garante array vazio em caso de falha
+        console.error('Falha ao buscar itens populares.');
+      } else {
+        setItensPopulares(await resItens.json());
+      }
+      
+      if (hasError) {
+          setError('Alguns dados não puderam ser carregados. Verifique o console.');
+      }
 
-      setDadosVendas(await resVendas.json());
-      setItensPopulares(await resItens.json());
     } catch (err) {
-      setError(err.message);
+      // Captura erros de rede/conexão
+      setError(`Erro de conexão: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -37,35 +53,47 @@ export default function useRelatorios() {
   const carregarRelatoriosGerais = async () => {
     setLoading(true);
     setError(null);
+    let hasError = false;
+
     try {
-      const [resUnidades, resItens] = await Promise.all([
-        fetch(`http://127.0.0.1:8000/relatorio/geral/vendas-por-unidade`),
-        fetch(`http://127.0.0.1:8000/relatorio/geral/itens-populares`)
-      ]);
+        // 1. Requisição de Vendas por Unidade
+        const resUnidades = await fetch(`http://127.0.0.1:8000/relatorio/geral/vendas-por-unidade`);
+        if (!resUnidades.ok) {
+            hasError = true;
+            setVendasPorUnidade([]);
+            console.error('Falha ao buscar vendas por unidade.');
+        } else {
+            setVendasPorUnidade(await resUnidades.json());
+        }
 
-      if (!resUnidades.ok || !resItens.ok) throw new Error('Erro ao buscar dados gerais');
+        // 2. Requisição de Itens Gerais
+        const resItens = await fetch(`http://127.0.0.1:8000/relatorio/geral/itens-populares`);
+        if (!resItens.ok) {
+            hasError = true;
+            setItensGerais([]);
+            console.error('Falha ao buscar itens gerais.');
+        } else {
+            setItensGerais(await resItens.json());
+        }
 
-      setVendasPorUnidade(await resUnidades.json());
-      setItensGerais(await resItens.json());
+        if (hasError) {
+            setError('Alguns dados gerais não puderam ser carregados. Verifique o console.');
+        }
+
     } catch (err) {
-      setError(err.message);
+      setError(`Erro de conexão: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   return { 
-    // Dados Específicos
     dadosVendas, 
     itensPopulares, 
     carregarRelatoriosEspecificos,
-    
-    // Dados Gerais
     vendasPorUnidade,
     itensGerais,
     carregarRelatoriosGerais,
-
-    // Estado Comum
     loading, 
     error 
   };

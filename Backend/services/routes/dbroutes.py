@@ -3,6 +3,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
 from dotenv import load_dotenv
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from flask import send_file
+from decimal import Decimal
+
 
 
 
