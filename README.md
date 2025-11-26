@@ -1,27 +1,94 @@
-# Requisitos Funcionais do Sistema:
-# Registrar
- pedidos de clientes, relacionando cada pedido aos itens do cardápio e à mesa ou entrega correspondente.
+# Projeto de Banco de Dados 1 - Restaurante
 
+Este projeto consiste em uma aplicação web com Backend em Python (Flask) e Frontend em React (Vite), integrada a um banco de dados PostgreSQL.
 
-# Atualizar 
-automaticamente o estoque de ingredientes conforme os pedidos são realizados.
+## Pré-requisitos
 
+* **Python** (3.x ou superior)
+* **Node.js** e **npm**
+* **PostgreSQL** instalado e rodando
 
-# Consultar 
-o status de cada pedido em tempo real, permitindo acompanhamento por garçons e cozinha.
+---
 
+## 1. Configuração do Banco de Dados
 
-# Emitir 
-os itens consumidos para a criação da comanda e nota fiscal para o pagamento do cliente.
+Antes de iniciar, certifique-se de que o PostgreSQL esteja rodando e crie um banco de dados para o projeto.
 
+1.  Navegue até a pasta `Backend`.
+2.  Edite (ou crie) o arquivo `.env` com as suas credenciais locais do PostgreSQL:
 
-# Criar 
-relatórios detalhados de vendas e consumo de ingredientes, apresentando gráficos do histórico de vendas por prato e comparação de períodos para apoiar decisões de marketing, planejamento de compras e ajustes no cardápio.
+```env
+DB_HOST=localhost
+DB_NAME=nome_do_seu_banco
+```
+## 2. Rodando o Backend (API)
+O Backend é construído com Python e Flask. Ele se comunica com o banco de dados PostgreSQL.
 
+Abra um terminal na pasta raiz do projeto e siga os passos:
 
-# Aplicar 
-cupom de desconto à um determinado pedido.
+Acesse a pasta do servidor:
+```
+Bash
 
+cd Backend
+(Recomendado) Crie e ative o ambiente virtual para isolar as dependências.
+```
+Windows:
+```
+Bash
 
-# Consultar 
-o status do seu pedido realizado por entrega.
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+Linux/Mac:
+```
+Bash
+
+python3 -m venv venv
+source venv/bin/activate
+```
+Instale as dependências listadas no requirements.txt:
+```
+Bash
+
+pip install -r requirements.txt
+```
+Inicie o servidor Flask:
+```
+Bash
+
+python main.py
+A API estará rodando em http://localhost:5000 (ou a porta exibida no terminal).
+```
+## 3. Rodando o Frontend (Interface)
+
+O Frontend é uma aplicação React configurada com Vite.
+
+Abra um novo terminal (mantendo o Backend rodando) e siga os passos:
+
+Acesse a pasta do frontend:
+```
+Bash
+
+cd frontend
+```
+Instale as dependências do Node:
+```
+Bash
+
+npm install
+```
+Inicie a aplicação de desenvolvimento:
+```
+Bash
+
+npm run dev
+```
+O Frontend estará acessível no endereço que aparecer no terminal (ex: http://localhost:5173).
+
+## Observação Importante:
+Ambos, Backend e Frontend, devem estar rodando simultaneamente para que a aplicação funcione corretamente.
+DB_USER=seu_usuario
+DB_PASS=sua_senha
+DB_PORT=5432
